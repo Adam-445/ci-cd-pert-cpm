@@ -6,106 +6,94 @@ from matplotlib.patches import Patch
 def creer_graphe_pert(graphe, resultats, fichier_sortie=None):
     """
     Cree un graphe PERT hierarchique avec chemin critique
-
-    Args:
-        graphe: Instance de GraphePERT
-        resultats: Dictionnaire des resultats PERT
-        fichier_sortie: Chemin pour sauvegarder (optionnel)
     """
-    fig, ax = plt.subplots(figsize=(20, 10))
+    fig, ax = plt.subplots(figsize=(18, 10))
 
-    dates_tot = resultats["dates_tot"]
     chemin = resultats["chemin_critique"]
+    dates_tot = resultats["dates_tot"]
 
-    # Calculer positions hierarchiques
+    # Calculer positions
     pos = _calculer_positions(graphe.graphe, dates_tot)
 
-    # Dessiner arcs normaux
-    arcs_normaux = _obtenir_arcs_normaux(graphe.graphe, chemin)
+    # Arcs normaux (gris)
+    arcs_normaux = [
+        (u, v)
+        for u, v in graphe.graphe.edges()
+        if not (u in chemin and v in chemin and chemin.index(v) == chemin.index(u) + 1)
+    ]
     nx.draw_networkx_edges(
         graphe.graphe,
         pos,
         edgelist=arcs_normaux,
-        edge_color="#94a3b8",
-        width=2.5,
+        edge_color="gray",
+        width=2,
         arrows=True,
-        arrowsize=18,
-        arrowstyle="-|>",
-        connectionstyle="arc3,rad=0.1",
-        node_size=4000,
+        arrowsize=15,
+        node_size=3500,
         ax=ax,
-        alpha=0.6,
+        alpha=0.5,
     )
 
-    # Dessiner arcs critiques
+    # Arcs critiques (rouge)
     arcs_critiques = [(chemin[i], chemin[i + 1]) for i in range(len(chemin) - 1)]
     nx.draw_networkx_edges(
         graphe.graphe,
         pos,
         edgelist=arcs_critiques,
-        edge_color="#dc2626",
-        width=5,
+        edge_color="red",
+        width=4,
         arrows=True,
-        arrowsize=25,
-        arrowstyle="-|>",
-        connectionstyle="arc3,rad=0.1",
-        node_size=4000,
+        arrowsize=20,
+        node_size=3500,
         ax=ax,
     )
 
-    # Dessiner noeuds
-    couleurs = ["#fca5a5" if n in chemin else "#93c5fd" for n in graphe.graphe.nodes()]
-    bordures = ["#991b1b" if n in chemin else "#1e3a8a" for n in graphe.graphe.nodes()]
+    # Noeuds
+    couleurs_noeuds = [
+        "lightcoral" if n in chemin else "lightblue" for n in graphe.graphe.nodes()
+    ]
+    couleurs_bordures = [
+        "darkred" if n in chemin else "darkblue" for n in graphe.graphe.nodes()
+    ]
 
     nx.draw_networkx_nodes(
         graphe.graphe,
         pos,
-        node_color=couleurs,
-        edgecolors=bordures,
-        linewidths=4,
-        node_size=4000,
+        node_color=couleurs_noeuds,
+        edgecolors=couleurs_bordures,
+        linewidths=3,
+        node_size=3500,
         ax=ax,
     )
 
-    # Dessiner labels
-    labels = _creer_labels(graphe, dates_tot)
+    # Labels
+    labels = {
+        n: f"{n}\n{graphe.graphe.nodes[n]['duree']}min\n[{dates_tot[n]['ES']}-{dates_tot[n]['EF']}]"
+        for n in graphe.graphe.nodes()
+    }
     nx.draw_networkx_labels(
-        graphe.graphe,
-        pos,
-        labels,
-        font_size=10,
-        font_weight="bold",
-        font_color="#0f172a",
-        ax=ax,
+        graphe.graphe, pos, labels, font_size=9, font_weight="bold", ax=ax
     )
 
     # Grille temporelle
-    for t in range(0, int(resultats["duree_totale"]) + 1, 10):
-        ax.axvline(x=t, color="#e2e8f0", linestyle="--", alpha=0.3, zorder=0)
+    duree_max = int(resultats["duree_totale"])
+    for t in range(0, duree_max + 1, 10):
+        ax.axvline(x=t, color="lightgray", linestyle="--", alpha=0.4, zorder=0)
 
-    # Titre et legende
+    # Titre et axes
     ax.set_title(
-        "Graphe PERT - Pipeline CI/CD\nRouge = Chemin Critique",
-        fontsize=16,
-        fontweight="bold",
-        pad=20,
+        "Graphe PERT - Chemin Critique en Rouge", fontsize=15, fontweight="bold", pad=15
     )
-    ax.set_xlabel("Temps (minutes)", fontsize=13, fontweight="bold")
-    ax.set_xlim(-5, resultats["duree_totale"] + 5)
+    ax.set_xlabel("Temps (minutes)", fontsize=12)
+    ax.set_xlim(-5, duree_max + 5)
+    ax.axis("off")
 
+    # Legende simple
     legende = [
-        Patch(facecolor="#fca5a5", edgecolor="#991b1b", linewidth=2, label="Critique"),
-        Patch(
-            facecolor="#93c5fd", edgecolor="#1e3a8a", linewidth=2, label="Non-critique"
-        ),
+        Patch(facecolor="lightcoral", edgecolor="darkred", label="Critique"),
+        Patch(facecolor="lightblue", edgecolor="darkblue", label="Non-critique"),
     ]
-    ax.legend(handles=legende, loc="upper left", fontsize=11, framealpha=0.9)
-
-    # Nettoyage
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-    ax.set_yticks([])
+    ax.legend(handles=legende, loc="upper left", fontsize=10)
 
     plt.tight_layout()
 
@@ -118,23 +106,22 @@ def creer_graphe_pert(graphe, resultats, fichier_sortie=None):
 
 def creer_diagramme_gantt(graphe, resultats, fichier_sortie=None):
     """
-    Cree un diagramme de Gantt simple
+    Cree un diagramme de Gantt
     """
     fig, ax = plt.subplots(figsize=(14, 8))
 
     taches = list(nx.topological_sort(graphe.graphe))
-    y_pos = {t: i for i, t in enumerate(taches)}
     chemin = resultats["chemin_critique"]
 
-    for tache in taches:
+    for i, tache in enumerate(taches):
         es = resultats["dates_tot"][tache]["ES"]
         duree = graphe.graphe.nodes[tache]["duree"]
         couleur = "red" if tache in chemin else "blue"
 
-        ax.barh(y_pos[tache], duree, left=es, height=0.6, color=couleur, alpha=0.7)
+        ax.barh(i, duree, left=es, height=0.6, color=couleur, alpha=0.7)
         ax.text(
             es + duree / 2,
-            y_pos[tache],
+            i,
             tache,
             ha="center",
             va="center",
@@ -142,7 +129,7 @@ def creer_diagramme_gantt(graphe, resultats, fichier_sortie=None):
             color="white",
         )
 
-    ax.set_yticks(list(y_pos.values()))
+    ax.set_yticks(range(len(taches)))
     ax.set_yticklabels([graphe.graphe.nodes[t]["nom"] for t in taches])
     ax.set_xlabel("Temps (minutes)", fontsize=12)
     ax.set_title("Diagramme de Gantt", fontsize=14, fontweight="bold")
@@ -157,51 +144,28 @@ def creer_diagramme_gantt(graphe, resultats, fichier_sortie=None):
     return fig, ax
 
 
-# Fonction utilitaires
+# Fonctions utilitaires
 
 
 def _calculer_positions(graphe, dates_tot):
-    """Calcule les positions hierarchiques des noeuds"""
+    """Calcule les positions hierarchiques basees sur le temps"""
+    # Calculer niveaux
     niveaux = {}
     for node in nx.topological_sort(graphe):
         preds = list(graphe.predecessors(node))
         niveaux[node] = max([niveaux[p] for p in preds], default=-1) + 1
 
+    # Grouper par niveau
     noeuds_par_niveau = {}
     for node, niveau in niveaux.items():
-        if niveau not in noeuds_par_niveau:
-            noeuds_par_niveau[niveau] = []
-        noeuds_par_niveau[niveau].append(node)
+        noeuds_par_niveau.setdefault(niveau, []).append(node)
 
+    # Positionner
     pos = {}
     for niveau, noeuds in noeuds_par_niveau.items():
-        n_noeuds = len(noeuds)
         for i, node in enumerate(sorted(noeuds)):
             x = (dates_tot[node]["ES"] + dates_tot[node]["EF"]) / 2
-            y = (i - (n_noeuds - 1) / 2) * 3
+            y = (i - (len(noeuds) - 1) / 2) * 2.5
             pos[node] = (x, y)
 
     return pos
-
-
-def _obtenir_arcs_normaux(graphe, chemin):
-    """Retourne les arcs non-critiques"""
-    arcs_normaux = []
-    for u, v in graphe.edges():
-        est_critique = (
-            u in chemin and v in chemin and chemin.index(v) == chemin.index(u) + 1
-        )
-        if not est_critique:
-            arcs_normaux.append((u, v))
-    return arcs_normaux
-
-
-def _creer_labels(graphe, dates_tot):
-    """Cree les labels pour les noeuds"""
-    labels = {}
-    for n in graphe.graphe.nodes():
-        info = graphe.obtenir_info_tache(n)
-        es = dates_tot[n]["ES"]
-        ef = dates_tot[n]["EF"]
-        labels[n] = f"{n}\n{info['duree']}min\n[{es}-{ef}]"
-    return labels
