@@ -1,0 +1,10 @@
+code,nom,duree,predecesseurs
+A,Git Checkout,2,
+B,Compile Backend,15,A
+C,Compile Frontend,10,A
+D,Unit Tests Back,8,B
+E,Unit Tests Front,5,C
+F,Build Docker Image,12,"B,C"
+G,Security Scan (SAST),20,A
+H,Integration Tests,25,"D,E,F"
+I,Deploy to Prod,10,"G,H"
