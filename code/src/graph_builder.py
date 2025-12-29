@@ -101,6 +101,18 @@ class GraphePERT:
 
         return True, "Graphe Valide"
 
+    def obtenir_info_tache(self, code: str) -> dict:
+        """
+        Retourne les informations d'une tache
+
+        Args:
+            code: Code de la tache
+
+        Returns:
+            Dictionnaire avec les informations de la tache
+        """
+        return self.taches.get(code, {})
+
     def afficher_resume(self):
         """
         Affiche un resume du graphe
