@@ -35,20 +35,11 @@ source .venv/bin/activate
 ### Étape 3: Installer les Dépendances
 
 ```bash
-# Installation complète (package + dépendances)
-pip install -e .
-
-# OU installation des dépendances uniquement
+# installation des dépendances
 pip install -r requirements.txt
 
-```
-
-### Vérification de l'Installation
-
-```bash
-# Vérifier que tout fonctionne
-python3 -c "from src import GraphePERT, CalculateurPERT; print('Installation réussie!')"
-
+# Installation du package
+pip install -e .
 ```
 
 ## Utilisation
