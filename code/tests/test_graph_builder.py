@@ -1,13 +1,9 @@
 import pytest
 import tempfile
 import os
-from pathlib import Path
-import sys
 
-# Ajouter le repertoire src au path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from graph_builder import GraphePERT
+from src.graph_builder import GraphePERT
 
 
 class TestGraphePERT:

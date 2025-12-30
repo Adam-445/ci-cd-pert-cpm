@@ -1,6 +1,6 @@
-kaleido==1.2.0
 matplotlib==3.10.8
 networkx==3.6.1
 numpy==2.4.0
 pandas==2.3.3
-plotly==6.5.0
+pytest==9.0.2
+pytest-cov==7.0.0
