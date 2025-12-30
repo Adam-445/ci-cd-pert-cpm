@@ -54,7 +54,7 @@ python scripts/main.py
 ### Méthode 2: Utilisation Programmatique
 
 ```python
-from pert_cpm import GraphePERT, CalculateurPERT
+from src import GraphePERT, CalculateurPERT
 import pandas as pd
 
 # 1. Charger le graphe PERT depuis CSV
