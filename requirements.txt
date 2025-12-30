@@ -1,0 +1,14 @@
+# Dependances principales
+matplotlib==3.10.8
+networkx==3.6.1
+numpy==2.4.0
+pandas==2.3.3
+
+# Dependances de developpement et test
+pytest==9.0.2
+pytest-cov==7.0.0
+pytest-timeout==2.4.0
+
+# Optionnel: pour les notebooks
+jupyter>=1.0.0
+ipykernel>=6.29.0
