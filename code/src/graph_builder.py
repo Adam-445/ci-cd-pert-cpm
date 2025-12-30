@@ -26,9 +26,10 @@ class GraphePERT:
             fichier_csv: Chemin vers le fichier CSV des taches
         """
         df = pd.read_csv(fichier_csv)
+        df.columns = df.columns.str.strip()
 
         for _, row in df.iterrows():
-            code = str(row["code"])
+            code = str(row["code"]).strip()
             nom = str(row["nom"])
             duree = int(row["duree"])
 
