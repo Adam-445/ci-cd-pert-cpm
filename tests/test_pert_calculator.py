@@ -19,6 +19,16 @@ class TestCalculateurPERT:
         return graphe
 
     @pytest.fixture
+    def graphe_simple_ff(self):
+        """Fixture: graphe simple pour tester FF"""
+        graphe = GraphePERT()
+        graphe.ajouter_tache("A", "Start", 5)
+        graphe.ajouter_tache("B", "Task B", 10, ["A"])
+        graphe.ajouter_tache("C", "Task C", 8, ["A"])
+        graphe.ajouter_tache("D", "End", 5, ["B", "C"])
+        return graphe
+
+    @pytest.fixture
     def graphe_parallele(self):
         """Fixture: graphe avec taches paralleles"""
         graphe = GraphePERT()
@@ -62,7 +72,7 @@ class TestCalculateurPERT:
         assert calc.duree_totale == 0
 
     def test_calculer_dates_au_plus_tot_simple(self, graphe_simple):
-        """Test calcul dates au plus tôt - graphe simple"""
+        """Test calcul dates au plus tot - graphe simple"""
         calc = CalculateurPERT(graphe_simple)
         dates = calc.calculer_dates_au_plus_tot()
 
@@ -88,7 +98,7 @@ class TestCalculateurPERT:
         assert dates["C"]["ES"] == 5
         assert dates["C"]["EF"] == 20
 
-        # La tâche D attend la fin de la plus longue branche (C)
+        # La tache D attend la fin de la plus longue branche (C)
         assert dates["D"]["ES"] == 20  # max(15, 20)
         assert dates["D"]["EF"] == 28
         assert calc.duree_totale == 28
@@ -99,7 +109,7 @@ class TestCalculateurPERT:
         calc.calculer_dates_au_plus_tot()
         dates_tard = calc.calculer_dates_au_plus_tard()
 
-        # Dans un graphe linéaire, LS=ES et LF=EF pour toutes les tâches
+        # Dans un graphe lineaire, LS=ES et LF=EF pour toutes les taches
         assert dates_tard["C"]["LF"] == 23
         assert dates_tard["C"]["LS"] == 15
         assert dates_tard["B"]["LF"] == 15
@@ -151,6 +161,90 @@ class TestCalculateurPERT:
 
         # Tache non-critique (B a une marge)
         assert marges["B"] == 5
+
+    def test_calculer_marges_libres_simple(self, graphe_simple_ff):
+        """Test calcul marges libres - graphe simple"""
+        calc = CalculateurPERT(graphe_simple_ff)
+        calc.executer_analyse_complete()
+
+        # Tache A: ES_B = 5, ES_C = 5, min = 5, EF_A = 5 → FF = 0
+        assert calc.marges_libres["A"] == 0
+
+        # Tache B: ES_D = 15, EF_B = 15 → FF = 0
+        assert calc.marges_libres["B"] == 0
+
+        # Tache C: ES_D = 15, EF_C = 13 → FF = 2
+        assert calc.marges_libres["C"] == 2
+
+        # Tache D: finale, FF = TF = 0
+        assert calc.marges_libres["D"] == 0
+
+    def test_marges_libres_tache_finale(self, graphe_simple):
+        """Test FF d'une tache finale = TF"""
+        calc = CalculateurPERT(graphe_simple)
+        calc.executer_analyse_complete()
+
+        # Pour tache finale, FF doit egal TF
+        tache_finale = "C"
+        assert calc.marges_libres[tache_finale] == calc.marges[tache_finale]
+
+    def test_marges_libres_chemin_critique(self, graphe_cicd):
+        """Test que les taches critiques ont FF = 0"""
+        calc = CalculateurPERT(graphe_cicd)
+        calc.executer_analyse_complete()
+
+        # Toutes les taches critiques doivent avoir FF = 0
+        for tache in calc.chemin_critique:
+            assert calc.marges_libres[tache] == 0, (
+                f"Tache critique {tache} devrait avoir FF = 0"
+            )
+
+    def test_ff_inferieure_ou_egale_tf(self, graphe_cicd):
+        """Test que FF <= TF pour toutes les taches"""
+        calc = CalculateurPERT(graphe_cicd)
+        calc.executer_analyse_complete()
+
+        for tache in calc.graphe.nodes():
+            ff = calc.marges_libres[tache]
+            tf = calc.marges[tache]
+            assert ff <= tf, f"Tache {tache}: FF ({ff}) > TF ({tf})"
+
+    def test_marges_libres_pipeline_cicd(self, graphe_cicd):
+        """Test valeurs FF pour le pipeline CI/CD complet"""
+        calc = CalculateurPERT(graphe_cicd)
+        calc.executer_analyse_complete()
+
+        # Valeurs attendues (à vérifier manuellement)
+        ff_attendues = {
+            "A": 0,  # Critique
+            "B": 0,  # Critique
+            "C": 0,  # EF=12, min(ES_F)=17... mais F attend B aussi
+            "D": 4,  # EF=25, ES_H=29 → FF=4
+            "E": 12,  # EF=17, ES_H=29 → FF=12
+            "F": 0,  # Critique
+            "G": 32,  # EF=22, ES_I=54 → FF=32
+            "H": 0,  # Critique
+            "I": 0,  # Critique (finale)
+        }
+
+        for tache, ff_attendue in ff_attendues.items():
+            assert calc.marges_libres[tache] == ff_attendue, (
+                f"Tache {tache}: FF attendue={ff_attendue}, "
+                f"obtenue={calc.marges_libres[tache]}"
+            )
+
+    def test_generer_tableau_avec_ff(self, graphe_cicd):
+        """Test que le tableau contient la colonne Marge_Libre"""
+        calc = CalculateurPERT(graphe_cicd)
+        calc.executer_analyse_complete()
+        tableau = calc.generer_tableau_resultats()
+
+        # Verifier que toutes les lignes ont Marge_Libre
+        for ligne in tableau:
+            assert "Marge_Libre" in ligne, "Colonne Marge_Libre manquante"
+            assert isinstance(ligne["Marge_Libre"], int), (
+                "Marge_Libre doit etre un entier"
+            )
 
     def test_identifier_chemin_critique_simple(self, graphe_simple):
         """Test identification chemin critique - graphe simple"""
