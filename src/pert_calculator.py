@@ -16,6 +16,7 @@ class CalculateurPERT:
         self.dates_tot = {}
         self.dates_tard = {}
         self.marges = {}
+        self.marges_libres = {}
         self.chemin_critique = []
         self.duree_totale = 0
 
@@ -94,6 +95,31 @@ class CalculateurPERT:
 
         return self.marges
 
+    def calculer_marges_libres(self) -> dict[str, int]:
+        """
+        Calcule la marge libre pour chaque tache
+        Marge libre = min(ES des successeurs) - EF de la tache
+
+        Returns:
+            Dictionnaire {code_tache: marge_libre}
+        """
+        for tache in self.graphe.nodes():
+            successeurs = list(self.graphe.successors(tache))
+
+            if not successeurs:
+                # Tache finale: FF = TF (pas de successeurs a retarder)
+                ff = self.marges[tache]
+            else:
+                # FF = min des ES des successeurs - EF de cette tache
+                min_es_successeurs = min(
+                    self.dates_tot[succ]["ES"] for succ in successeurs
+                )
+                ff = min_es_successeurs - self.dates_tot[tache]["EF"]
+
+            self.marges_libres[tache] = ff
+
+        return self.marges_libres
+
     def identifier_chemin_critique(self) -> list[str]:
         """
         Identifie le chemin critique (taches avec marge = 0)
@@ -137,10 +163,13 @@ class CalculateurPERT:
         # Etape 2: Dates au plus tard
         self.calculer_dates_au_plus_tard()
 
-        # Etape 3: Marges
+        # Etape 3: Marges Totales
         self.calculer_marges()
 
-        # Etape 4: Chemin critique
+        # Etape 4: Marges Libres
+        self.calculer_marges_libres()
+
+        # Etape 5: Chemin critique
         self.identifier_chemin_critique()
 
         return {
@@ -148,6 +177,7 @@ class CalculateurPERT:
             "dates_tot": self.dates_tot,
             "dates_tard": self.dates_tard,
             "marges": self.marges,
+            "marges_libres": self.marges_libres,
             "chemin_critique": self.chemin_critique,
         }
 
@@ -172,6 +202,7 @@ class CalculateurPERT:
                 "LS": self.dates_tard[tache]["LS"],
                 "LF": self.dates_tard[tache]["LF"],
                 "Marge": self.marges[tache],
+                "Marge_Libre": self.marges_libres[tache],
                 "Critique": "Oui" if self.marges[tache] == 0 else "Non",
             }
 
@@ -191,4 +222,8 @@ class CalculateurPERT:
         for tache, marge in self.marges.items():
             if marge > 0:
                 nom = self.graphe_pert.obtenir_info_tache(tache)["nom"]
-                print(f"  {tache} ({nom}): {marge} minutes de marge")
+                marge_libre = self.marges_libres[tache]
+                print(
+                    f"  {tache} ({nom}): {marge} minutes de marge, "
+                    f"{marge_libre} min marge libre"
+                )

@@ -1,10 +1,10 @@
-Code,Nom,Duree,ES,EF,LS,LF,Marge,Critique
-A,Git Checkout,2,0,2,0,2,0,Oui
-B,Compile Backend,15,2,17,2,17,0,Oui
-C,Compile Frontend,10,2,12,7,17,5,Non
-G,Security Scan (SAST),20,2,22,34,54,32,Non
-D,Unit Tests Back,8,17,25,21,29,4,Non
-E,Unit Tests Front,5,12,17,24,29,12,Non
-F,Build Docker Image,12,17,29,17,29,0,Oui
-H,Integration Tests,25,29,54,29,54,0,Oui
-I,Deploy to Prod,10,54,64,54,64,0,Oui
+Code,Nom,Duree,ES,EF,LS,LF,Marge,Marge_Libre,Critique
+A,Git Checkout,2,0,2,0,2,0,0,Oui
+B,Compile Backend,15,2,17,2,17,0,0,Oui
+C,Compile Frontend,10,2,12,7,17,5,0,Non
+G,Security Scan (SAST),20,2,22,34,54,32,32,Non
+D,Unit Tests Back,8,17,25,21,29,4,4,Non
+E,Unit Tests Front,5,12,17,24,29,12,12,Non
+F,Build Docker Image,12,17,29,17,29,0,0,Oui
+H,Integration Tests,25,29,54,29,54,0,0,Oui
+I,Deploy to Prod,10,54,64,54,64,0,0,Oui
